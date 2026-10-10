@@ -1,0 +1,13 @@
+
+# Compiled binaries
+*.exe
+*.out
+*.test
+
+# IDE settings
+.idea/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
