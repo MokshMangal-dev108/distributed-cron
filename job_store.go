@@ -18,3 +18,24 @@ func (st *JobStore) Create(job Job) *Job {
 	st.store[job.ID] = &job
 	return &job
 }
+
+func (st *JobStore) Get(id int) (*Job, bool) {
+	job, ok := st.store[id]
+	return job, ok
+}
+
+func (st *JobStore) List() []*Job {
+	lst := make([]*Job, 0, len(st.store))
+	for _, job := range st.store {
+		lst = append(lst, job)
+	}
+	return lst
+}
+
+func (st *JobStore) Delete(id int) bool {
+	_, exists := st.store[id]
+	if exists {
+		delete(st.store, id)
+	}
+	return exists
+}
