@@ -1,5 +1,10 @@
 package main
 
+import (
+	"errors"
+	"strings"
+)
+
 type JobStore struct {
 	nextID int
 	store  map[int]*Job
@@ -12,11 +17,17 @@ func NewJobStore() *JobStore {
 	}
 }
 
-func (st *JobStore) Create(job Job) *Job {
+func (st *JobStore) Create(job Job) (*Job, error) {
+	if strings.TrimSpace(job.Name) == "" {
+		return nil, errors.New("job name is required")
+	}
+	if job.Interval <= 0 {
+		return nil, errors.New("job interval is required")
+	}
 	st.nextID++
 	job.ID = st.nextID
 	st.store[job.ID] = &job
-	return &job
+	return &job, nil
 }
 
 func (st *JobStore) Get(id int) (*Job, bool) {
