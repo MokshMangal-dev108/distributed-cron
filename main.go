@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -8,32 +9,25 @@ import (
 func main() {
 	store := NewJobStore()
 
-	job1, err := store.Create(Job{
-		Name:     "send-report",
-		Interval: 5 * time.Minute,
-		Status:   "ACTIVE",
+	_, err := store.Create(Job{
+		Name:      "send-report",
+		Interval:  2 * time.Second,
+		NextRunAt: time.Now().Add(2 * time.Second),
+		Status:    "ACTIVE",
 	})
-	if err != nil {
-		fmt.Println("Error-> ", err)
-		return
-	}
 
-	job2, err := store.Create(Job{
-		Name:     "",
-		Interval: 10 * time.Second,
-		Status:   "ACTIVE",
-	})
 	if err != nil {
-		fmt.Println("Error-> ", err)
-		return
+		panic(err)
 	}
-	fmt.Println("Created:", job1.ID, job1.Name)
-	fmt.Println("Created:", job2.ID, job2.Name)
+	scheduler := NewScheduler(store)
+	ctx, cancel := context.WithCancel(context.Background())
 
-	fmt.Println("LIST:", store.List())
-	jb, _ := store.Get(1)
-	fmt.Println("ID 1:", jb)
-	del := store.Delete(1)
-	fmt.Println("DEL:", del)
-	fmt.Println("LIST:", store.List())
+	go scheduler.Start(ctx)
+
+	time.Sleep(10 * time.Second)
+
+	cancel()
+
+	fmt.Println("Main function finished")
+
 }
