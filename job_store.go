@@ -3,11 +3,13 @@ package main
 import (
 	"errors"
 	"strings"
+	"sync"
 )
 
 type JobStore struct {
 	nextID int
 	store  map[int]*Job
+	mu     sync.Mutex
 }
 
 func NewJobStore() *JobStore {
@@ -49,4 +51,24 @@ func (st *JobStore) Delete(id int) bool {
 		delete(st.store, id)
 	}
 	return exists
+}
+
+func (st *JobStore) TryClaim(id int) bool {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	job, exists := st.store[id]
+	if !exists || job.IsRunning {
+		return false
+	}
+	job.IsRunning = true
+	return true
+}
+
+func (st *JobStore) Release(id int) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	job, exists := st.store[id]
+	if exists {
+		job.IsRunning = false
+	}
 }

@@ -19,14 +19,24 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	scheduler := NewScheduler(store)
+	workerPool := NewWorkerPool(3, store)
+	workerPool.Start()
+	scheduler := NewScheduler(store, workerPool)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go scheduler.Start(ctx)
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		scheduler.Start(ctx)
+	}()
 
 	time.Sleep(10 * time.Second)
 
 	cancel()
+
+	<-done
+	workerPool.Shutdown()
 
 	fmt.Println("Main function finished")
 

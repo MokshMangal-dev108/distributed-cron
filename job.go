@@ -8,4 +8,5 @@ type Job struct {
 	Interval  time.Duration
 	NextRunAt time.Time
 	Status    string
+	IsRunning bool
 }
