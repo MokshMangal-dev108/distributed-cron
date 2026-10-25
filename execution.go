@@ -64,3 +64,34 @@ func (es *ExecutionStore) MarkRunning(Id int) bool {
 	val.StartedAt = &now
 	return true
 }
+
+func (es *ExecutionStore) MarkCompleted(Id int) bool {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+	val, exists := es.records[Id]
+	if !exists {
+		return false
+	}
+	val.Status = ExecutionCompleted
+	now := time.Now()
+	val.FinishedAt = &now
+	return true
+}
+
+func (es *ExecutionStore) MarkFailed(id int, err error) bool {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+
+	execution, exists := es.records[id]
+	if !exists {
+		return false
+	}
+	execution.Status = ExecutionFailed
+	now := time.Now()
+	execution.FinishedAt = &now
+	if err != nil {
+		execution.Error = err.Error()
+	}
+
+	return true
+}
