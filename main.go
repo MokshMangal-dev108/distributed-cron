@@ -8,7 +8,7 @@ import (
 
 func main() {
 	store := NewJobStore()
-
+	executionStore := NewExecutionStore()
 	_, err := store.Create(Job{
 		Name:      "send-report",
 		Interval:  2 * time.Second,
@@ -19,9 +19,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	workerPool := NewWorkerPool(3, store)
+	workerPool := NewWorkerPool(3, store, executionStore)
 	workerPool.Start()
-	scheduler := NewScheduler(store, workerPool)
+	scheduler := NewScheduler(store, workerPool, executionStore)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	done := make(chan struct{})

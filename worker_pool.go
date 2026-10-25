@@ -6,18 +6,25 @@ import (
 	"time"
 )
 
-type WorkerPool struct {
-	workerCount int
-	jobs        chan *Job
-	wg          sync.WaitGroup
-	store       *JobStore
+type JobTask struct {
+	jobs      *Job
+	execution *Execution
 }
 
-func NewWorkerPool(workerCount int, store *JobStore) *WorkerPool {
+type WorkerPool struct {
+	workerCount int
+	jobs        chan JobTask
+	wg          sync.WaitGroup
+	store       *JobStore
+	executions  *ExecutionStore
+}
+
+func NewWorkerPool(workerCount int, store *JobStore, executions *ExecutionStore) *WorkerPool {
 	return &WorkerPool{
 		workerCount: workerCount,
-		jobs:        make(chan *Job, workerCount),
+		jobs:        make(chan JobTask, workerCount),
 		store:       store,
+		executions:  executions,
 		//wg:          sync.WaitGroup{}, we don't need this go automatically initialize this with empty mode
 	}
 }
@@ -27,27 +34,36 @@ func (p *WorkerPool) Start() {
 		p.wg.Add(1)
 		go func(workerID int) {
 			defer p.wg.Done()
-			for job := range p.jobs {
-				p.process(job, workerID)
+			for task := range p.jobs {
+				p.process(task, workerID)
 			}
 		}(i + 1)
 	}
 }
 
-func (p *WorkerPool) process(job *Job, workerID int) {
+func (p *WorkerPool) process(task JobTask, workerID int) {
+	job := task.jobs
+	execution := task.execution
 	// Always release the job when processing finishes.
 	defer p.store.Release(job.ID)
 
-	fmt.Printf("Worker %d started: %s (ID: %d)\n", workerID, job.Name, job.ID)
+	p.executions.MarkRunning(job.ID)
+
+	fmt.Printf("Worker %d started: %s | Execution ID: %d\n", workerID, job.Name, execution.ID)
 
 	// Simulate actual job execution.
 	time.Sleep(3 * time.Second)
 
-	fmt.Printf("Worker %d completed: %s (ID: %d)\n", workerID, job.Name, job.ID)
+	p.executions.MarkCompleted(job.ID)
+
+	fmt.Printf("Worker %d completed: %s | Execution ID: %d\n", workerID, job.Name, execution.ID)
 }
 
-func (p *WorkerPool) Submit(job *Job) {
-	p.jobs <- job
+func (p *WorkerPool) Submit(job *Job, execution *Execution) {
+	p.jobs <- JobTask{
+		jobs:      job,
+		execution: execution,
+	}
 }
 
 func (p *WorkerPool) Shutdown() {

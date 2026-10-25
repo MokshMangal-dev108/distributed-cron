@@ -7,14 +7,16 @@ import (
 )
 
 type Scheduler struct {
-	store      *JobStore
-	workerPool *WorkerPool
+	store          *JobStore
+	workerPool     *WorkerPool
+	executionStore *ExecutionStore
 }
 
-func NewScheduler(store *JobStore, workerPool *WorkerPool) *Scheduler {
+func NewScheduler(store *JobStore, workerPool *WorkerPool, executionStore *ExecutionStore) *Scheduler {
 	return &Scheduler{
-		store:      store,
-		workerPool: workerPool,
+		store:          store,
+		workerPool:     workerPool,
+		executionStore: executionStore,
 	}
 }
 
@@ -40,8 +42,9 @@ func (sch *Scheduler) Execute() {
 		if job.Status == "ACTIVE" && !job.NextRunAt.After(t) && !job.IsRunning {
 			if sch.store.TryClaim(job.ID) {
 				fmt.Println("Job claimed:", job.Name)
+				execution := sch.executionStore.Create(job.ID, t)
 				job.NextRunAt = t.Add(job.Interval)
-				sch.workerPool.Submit(job)
+				sch.workerPool.Submit(job, execution)
 			}
 
 		}
