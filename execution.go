@@ -105,7 +105,7 @@ func (es *ExecutionStore) Get(id int) (*Execution, bool) {
 		return nil, false
 	}
 
-	return execution, true
+	return cloneExecution(execution), true
 }
 
 func (es *ExecutionStore) List() []*Execution {
@@ -115,7 +115,7 @@ func (es *ExecutionStore) List() []*Execution {
 	executions := make([]*Execution, 0, len(es.records))
 
 	for _, execution := range es.records {
-		executions = append(executions, execution)
+		executions = append(executions, cloneExecution(execution))
 	}
 
 	return executions
@@ -129,8 +129,28 @@ func (es *ExecutionStore) ListByJobID(jobID int) []*Execution {
 
 	for _, execution := range es.records {
 		if execution.JobID == jobID {
-			executions = append(executions, execution)
+			executions = append(executions, cloneExecution(execution))
 		}
 	}
 	return executions
+}
+
+func cloneExecution(execution *Execution) *Execution {
+	if execution == nil {
+		return nil
+	}
+
+	copyObj := *execution
+
+	if execution.StartedAt != nil {
+		startedAt := *execution.StartedAt
+		copyObj.StartedAt = &startedAt
+	}
+
+	if execution.FinishedAt != nil {
+		finishedAt := *execution.FinishedAt
+		copyObj.FinishedAt = &finishedAt
+	}
+
+	return &copyObj
 }
