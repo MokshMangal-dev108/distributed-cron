@@ -95,3 +95,42 @@ func (es *ExecutionStore) MarkFailed(id int, err error) bool {
 
 	return true
 }
+
+func (es *ExecutionStore) Get(id int) (*Execution, bool) {
+	es.mu.RLock()
+	defer es.mu.RUnlock()
+
+	execution, exists := es.records[id]
+	if !exists {
+		return nil, false
+	}
+
+	return execution, true
+}
+
+func (es *ExecutionStore) List() []*Execution {
+	es.mu.RLock()
+	defer es.mu.RUnlock()
+
+	executions := make([]*Execution, 0, len(es.records))
+
+	for _, execution := range es.records {
+		executions = append(executions, execution)
+	}
+
+	return executions
+}
+
+func (es *ExecutionStore) ListByJobID(jobID int) []*Execution {
+	es.mu.RLock()
+	defer es.mu.RUnlock()
+
+	executions := make([]*Execution, 0)
+
+	for _, execution := range es.records {
+		if execution.JobID == jobID {
+			executions = append(executions, execution)
+		}
+	}
+	return executions
+}
